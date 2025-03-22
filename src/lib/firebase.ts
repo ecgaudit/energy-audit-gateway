@@ -12,9 +12,31 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Log environment variables (remove in production)
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? 'Present' : 'Missing',
+  authDomain: firebaseConfig.authDomain ? 'Present' : 'Missing',
+  projectId: firebaseConfig.projectId ? 'Present' : 'Missing',
+  storageBucket: firebaseConfig.storageBucket ? 'Present' : 'Missing',
+  messagingSenderId: firebaseConfig.messagingSenderId ? 'Present' : 'Missing',
+  appId: firebaseConfig.appId ? 'Present' : 'Missing',
+  measurementId: firebaseConfig.measurementId ? 'Present' : 'Missing'
+});
 
+let app;
+let auth;
+let db;
+
+try {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+  throw error;
+}
+
+export { auth, db };
 export default app;

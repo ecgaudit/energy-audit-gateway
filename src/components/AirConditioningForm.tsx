@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AirConditioningEquipment } from "@/types";
+import { AirConditioningEquipment, AirConditioningFormState } from "@/types";
 import { addAirConditioningEquipment, updateAirConditioningEquipment } from "@/services/firebaseService";
 
 interface AirConditioningFormProps {
@@ -17,20 +17,20 @@ interface AirConditioningFormProps {
 
 const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirConditioningFormProps) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Omit<AirConditioningEquipment, 'id' | 'auditId'>>({
+  const [formData, setFormData] = useState<AirConditioningFormState>({
     roomName: '',
-    occupancy: 0,
-    durationPerDay: 0,
-    daysPerWeek: 0,
+    occupancy: '',
+    durationPerDay: '',
+    daysPerWeek: '',
     remarks: '',
-    quantity: 0,
-    inputPower: 0,
-    capacityBTU: 0,
-    capacityWatt: 0,
-    eer: 0,
-    roomLength: 0,
-    roomWidth: 0,
-    roomHeight: 0,
+    quantity: '',
+    inputPower: '',
+    capacityBTU: '',
+    capacityWatt: '',
+    eer: '',
+    roomLength: '',
+    roomWidth: '',
+    roomHeight: '',
   });
 
   const { toast } = useToast();
@@ -39,18 +39,18 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
     if (editingData) {
       setFormData({
         roomName: editingData.roomName,
-        occupancy: editingData.occupancy,
-        durationPerDay: editingData.durationPerDay,
-        daysPerWeek: editingData.daysPerWeek,
+        occupancy: editingData.occupancy.toString(),
+        durationPerDay: editingData.durationPerDay.toString(),
+        daysPerWeek: editingData.daysPerWeek.toString(),
         remarks: editingData.remarks,
-        quantity: editingData.quantity,
-        inputPower: editingData.inputPower,
-        capacityBTU: editingData.capacityBTU,
-        capacityWatt: editingData.capacityWatt,
-        eer: editingData.eer,
-        roomLength: editingData.roomLength,
-        roomWidth: editingData.roomWidth,
-        roomHeight: editingData.roomHeight,
+        quantity: editingData.quantity.toString(),
+        inputPower: editingData.inputPower.toString(),
+        capacityBTU: editingData.capacityBTU.toString(),
+        capacityWatt: editingData.capacityWatt.toString(),
+        eer: editingData.eer.toString(),
+        roomLength: editingData.roomLength.toString(),
+        roomWidth: editingData.roomWidth.toString(),
+        roomHeight: editingData.roomHeight.toString(),
       });
     }
   }, [editingData]);
@@ -61,11 +61,25 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
     try {
       setLoading(true);
       
+      // Convert string values to numbers before saving
+      const equipmentData: Omit<AirConditioningEquipment, 'id' | 'auditId'> = {
+        ...formData,
+        occupancy: Number(formData.occupancy),
+        durationPerDay: Number(formData.durationPerDay),
+        daysPerWeek: Number(formData.daysPerWeek),
+        quantity: Number(formData.quantity),
+        inputPower: Number(formData.inputPower),
+        capacityBTU: Number(formData.capacityBTU),
+        capacityWatt: Number(formData.capacityWatt),
+        eer: Number(formData.eer),
+        roomLength: Number(formData.roomLength),
+        roomWidth: Number(formData.roomWidth),
+        roomHeight: Number(formData.roomHeight),
+        auditId,
+      };
+      
       if (editingData?.id) {
-        await updateAirConditioningEquipment(editingData.id, {
-          ...formData,
-          auditId,
-        });
+        await updateAirConditioningEquipment(editingData.id, equipmentData);
         
         toast({
           title: "Success",
@@ -73,10 +87,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
           variant: "default",
         });
       } else {
-        await addAirConditioningEquipment({
-          ...formData,
-          auditId,
-        });
+        await addAirConditioningEquipment(equipmentData);
         
         toast({
           title: "Success",
@@ -125,7 +136,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 name="occupancy"
                 type="number"
                 value={formData.occupancy}
-                onChange={(e) => setFormData({ ...formData, occupancy: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, occupancy: e.target.value })}
                 placeholder="e.g. 4"
                 required
               />
@@ -138,7 +149,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 name="quantity"
                 type="number"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                 placeholder="e.g. 2"
                 required
               />
@@ -151,7 +162,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 name="inputPower"
                 type="number"
                 value={formData.inputPower}
-                onChange={(e) => setFormData({ ...formData, inputPower: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, inputPower: e.target.value })}
                 placeholder="e.g. 1500"
                 required
               />
@@ -164,7 +175,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 name="capacityBTU"
                 type="number"
                 value={formData.capacityBTU}
-                onChange={(e) => setFormData({ ...formData, capacityBTU: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, capacityBTU: e.target.value })}
                 placeholder="e.g. 12000"
                 required
               />
@@ -177,7 +188,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 name="capacityWatt"
                 type="number"
                 value={formData.capacityWatt}
-                onChange={(e) => setFormData({ ...formData, capacityWatt: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, capacityWatt: e.target.value })}
                 placeholder="e.g. 3500"
                 required
               />
@@ -191,7 +202,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 type="number"
                 step="0.1"
                 value={formData.eer}
-                onChange={(e) => setFormData({ ...formData, eer: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, eer: e.target.value })}
                 placeholder="e.g. 10.5"
                 required
               />
@@ -205,7 +216,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 type="number"
                 step="0.01"
                 value={formData.roomLength}
-                onChange={(e) => setFormData({ ...formData, roomLength: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomLength: e.target.value })}
                 placeholder="e.g. 5.5"
                 required
               />
@@ -219,7 +230,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 type="number"
                 step="0.01"
                 value={formData.roomWidth}
-                onChange={(e) => setFormData({ ...formData, roomWidth: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomWidth: e.target.value })}
                 placeholder="e.g. 4.2"
                 required
               />
@@ -233,7 +244,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 type="number"
                 step="0.01"
                 value={formData.roomHeight}
-                onChange={(e) => setFormData({ ...formData, roomHeight: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomHeight: e.target.value })}
                 placeholder="e.g. 3.0"
                 required
               />
@@ -247,7 +258,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 type="number"
                 step="0.5"
                 value={formData.durationPerDay}
-                onChange={(e) => setFormData({ ...formData, durationPerDay: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, durationPerDay: e.target.value })}
                 placeholder="e.g. 8.5"
                 required
               />
@@ -262,7 +273,7 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 min="1"
                 max="7"
                 value={formData.daysPerWeek}
-                onChange={(e) => setFormData({ ...formData, daysPerWeek: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, daysPerWeek: e.target.value })}
                 placeholder="e.g. 5"
                 required
               />

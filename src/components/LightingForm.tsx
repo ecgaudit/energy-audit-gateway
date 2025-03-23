@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LightingEquipment } from "@/types";
+import { LightingEquipment, LightingFormState } from "@/types";
 import { addLightingEquipment, updateLightingEquipment } from "@/services/firebaseService";
 
 interface LightingFormProps {
@@ -17,17 +17,17 @@ interface LightingFormProps {
 
 const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFormProps) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Omit<LightingEquipment, 'id' | 'auditId'>>({
+  const [formData, setFormData] = useState<LightingFormState>({
     roomName: '',
-    occupancy: 0,
-    durationPerDay: 0,
-    daysPerWeek: 0,
+    occupancy: '',
+    durationPerDay: '',
+    daysPerWeek: '',
     remarks: '',
-    quantity: 0,
-    power: 0,
-    roomLength: 0,
-    roomWidth: 0,
-    roomHeight: 0,
+    quantity: '',
+    power: '',
+    roomLength: '',
+    roomWidth: '',
+    roomHeight: '',
   });
 
   const { toast } = useToast();
@@ -36,15 +36,15 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
     if (editingData) {
       setFormData({
         roomName: editingData.roomName,
-        occupancy: editingData.occupancy,
-        durationPerDay: editingData.durationPerDay,
-        daysPerWeek: editingData.daysPerWeek,
+        occupancy: editingData.occupancy.toString(),
+        durationPerDay: editingData.durationPerDay.toString(),
+        daysPerWeek: editingData.daysPerWeek.toString(),
         remarks: editingData.remarks,
-        quantity: editingData.quantity,
-        power: editingData.power,
-        roomLength: editingData.roomLength,
-        roomWidth: editingData.roomWidth,
-        roomHeight: editingData.roomHeight,
+        quantity: editingData.quantity.toString(),
+        power: editingData.power.toString(),
+        roomLength: editingData.roomLength.toString(),
+        roomWidth: editingData.roomWidth.toString(),
+        roomHeight: editingData.roomHeight.toString(),
       });
     }
   }, [editingData]);
@@ -55,11 +55,22 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
     try {
       setLoading(true);
       
+      // Convert string values to numbers before saving
+      const equipmentData: Omit<LightingEquipment, 'id' | 'auditId'> = {
+        ...formData,
+        occupancy: Number(formData.occupancy),
+        durationPerDay: Number(formData.durationPerDay),
+        daysPerWeek: Number(formData.daysPerWeek),
+        quantity: Number(formData.quantity),
+        power: Number(formData.power),
+        roomLength: Number(formData.roomLength),
+        roomWidth: Number(formData.roomWidth),
+        roomHeight: Number(formData.roomHeight),
+        auditId,
+      };
+      
       if (editingData?.id) {
-        await updateLightingEquipment(editingData.id, {
-          ...formData,
-          auditId,
-        });
+        await updateLightingEquipment(editingData.id, equipmentData);
         
         toast({
           title: "Success",
@@ -67,10 +78,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
           variant: "default",
         });
       } else {
-        await addLightingEquipment({
-          ...formData,
-          auditId,
-        });
+        await addLightingEquipment(equipmentData);
         
         toast({
           title: "Success",
@@ -119,7 +127,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 name="occupancy"
                 type="number"
                 value={formData.occupancy}
-                onChange={(e) => setFormData({ ...formData, occupancy: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, occupancy: e.target.value })}
                 placeholder="e.g. 4"
                 required
               />
@@ -132,7 +140,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 name="quantity"
                 type="number"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                 placeholder="e.g. 2"
                 required
               />
@@ -145,7 +153,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 name="power"
                 type="number"
                 value={formData.power}
-                onChange={(e) => setFormData({ ...formData, power: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, power: e.target.value })}
                 placeholder="e.g. 1500"
                 required
               />
@@ -159,7 +167,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 type="number"
                 step="0.01"
                 value={formData.roomLength}
-                onChange={(e) => setFormData({ ...formData, roomLength: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomLength: e.target.value })}
                 placeholder="e.g. 5.5"
                 required
               />
@@ -173,7 +181,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 type="number"
                 step="0.01"
                 value={formData.roomWidth}
-                onChange={(e) => setFormData({ ...formData, roomWidth: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomWidth: e.target.value })}
                 placeholder="e.g. 4.2"
                 required
               />
@@ -187,7 +195,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 type="number"
                 step="0.01"
                 value={formData.roomHeight}
-                onChange={(e) => setFormData({ ...formData, roomHeight: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, roomHeight: e.target.value })}
                 placeholder="e.g. 3.0"
                 required
               />
@@ -201,7 +209,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 type="number"
                 step="0.5"
                 value={formData.durationPerDay}
-                onChange={(e) => setFormData({ ...formData, durationPerDay: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, durationPerDay: e.target.value })}
                 placeholder="e.g. 8.5"
                 required
               />
@@ -216,7 +224,7 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 min="1"
                 max="7"
                 value={formData.daysPerWeek}
-                onChange={(e) => setFormData({ ...formData, daysPerWeek: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, daysPerWeek: e.target.value })}
                 placeholder="e.g. 5"
                 required
               />

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { OtherEquipment } from "@/types";
+import { OtherEquipment, OtherEquipmentFormState } from "@/types";
 import { addOtherEquipment, updateOtherEquipment } from "@/services/firebaseService";
 
 interface OtherEquipmentFormProps {
@@ -17,16 +17,16 @@ interface OtherEquipmentFormProps {
 
 const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: OtherEquipmentFormProps) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Omit<OtherEquipment, 'id' | 'auditId'>>({
+  const [formData, setFormData] = useState<OtherEquipmentFormState>({
     roomName: '',
-    occupancy: 0,
+    occupancy: '',
     equipmentName: '',
     equipmentType: '',
-    durationPerDay: 0,
-    daysPerWeek: 0,
+    durationPerDay: '',
+    daysPerWeek: '',
     remarks: '',
-    quantity: 0,
-    power: 0,
+    quantity: '',
+    power: '',
   });
 
   const { toast } = useToast();
@@ -35,14 +35,14 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
     if (editingData) {
       setFormData({
         roomName: editingData.roomName,
-        occupancy: editingData.occupancy,
+        occupancy: editingData.occupancy.toString(),
         equipmentName: editingData.equipmentName,
         equipmentType: editingData.equipmentType,
-        durationPerDay: editingData.durationPerDay,
-        daysPerWeek: editingData.daysPerWeek,
+        durationPerDay: editingData.durationPerDay.toString(),
+        daysPerWeek: editingData.daysPerWeek.toString(),
         remarks: editingData.remarks,
-        quantity: editingData.quantity,
-        power: editingData.power,
+        quantity: editingData.quantity.toString(),
+        power: editingData.power.toString(),
       });
     }
   }, [editingData]);
@@ -53,11 +53,19 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
     try {
       setLoading(true);
       
+      // Convert string values to numbers before saving
+      const equipmentData: Omit<OtherEquipment, 'id' | 'auditId'> = {
+        ...formData,
+        occupancy: Number(formData.occupancy),
+        durationPerDay: Number(formData.durationPerDay),
+        daysPerWeek: Number(formData.daysPerWeek),
+        quantity: Number(formData.quantity),
+        power: Number(formData.power),
+        auditId,
+      };
+      
       if (editingData?.id) {
-        await updateOtherEquipment(editingData.id, {
-          ...formData,
-          auditId,
-        });
+        await updateOtherEquipment(editingData.id, equipmentData);
         
         toast({
           title: "Success",
@@ -65,10 +73,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
           variant: "default",
         });
       } else {
-        await addOtherEquipment({
-          ...formData,
-          auditId,
-        });
+        await addOtherEquipment(equipmentData);
         
         toast({
           title: "Success",
@@ -117,7 +122,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
                 name="occupancy"
                 type="number"
                 value={formData.occupancy}
-                onChange={(e) => setFormData({ ...formData, occupancy: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, occupancy: e.target.value })}
                 placeholder="e.g. 4"
                 required
               />
@@ -154,7 +159,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
                 name="quantity"
                 type="number"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                 placeholder="e.g. 2"
                 required
               />
@@ -167,7 +172,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
                 name="power"
                 type="number"
                 value={formData.power}
-                onChange={(e) => setFormData({ ...formData, power: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, power: e.target.value })}
                 placeholder="e.g. 1500"
                 required
               />
@@ -181,7 +186,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
                 type="number"
                 step="0.5"
                 value={formData.durationPerDay}
-                onChange={(e) => setFormData({ ...formData, durationPerDay: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, durationPerDay: e.target.value })}
                 placeholder="e.g. 8.5"
                 required
               />
@@ -196,7 +201,7 @@ const OtherEquipmentForm = ({ auditId, onCancel, onSuccess, editingData }: Other
                 min="1"
                 max="7"
                 value={formData.daysPerWeek}
-                onChange={(e) => setFormData({ ...formData, daysPerWeek: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, daysPerWeek: e.target.value })}
                 placeholder="e.g. 5"
                 required
               />

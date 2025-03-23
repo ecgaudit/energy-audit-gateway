@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Search, Filter, Download, Eye, LogOut, Clipboard, Settings, Users } from "lucide-react";
-import { getAllAudits } from "@/services/firebaseService";
-import { AuditBase } from "@/types";
+import { getAllAudits, getFullAuditData } from "@/services/firebaseService";
+import { AuditBase, AuditData } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import UserManagement from "@/components/UserManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AuditReport from "@/components/AuditReport";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 
 const ManagerDashboard = () => {
   const [audits, setAudits] = useState<(AuditBase & { id: string })[]>([]);
@@ -21,9 +23,15 @@ const ManagerDashboard = () => {
   const [filterBranch, setFilterBranch] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"date" | "client">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedAudit, setSelectedAudit] = useState<AuditData | null>(null);
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Generate consistent filename
+  const generateFileName = (clientName: string) => {
+    return `energy-audit-${clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
+  };
 
   useEffect(() => {
     const fetchAllAudits = async () => {
@@ -114,12 +122,27 @@ const ManagerDashboard = () => {
     navigate(`/audit/${auditId}`);
   };
 
-  const handleDownloadReport = (auditId: string) => {
-    // Implement report download functionality
-    toast({
-      title: "Coming Soon",
-      description: "Report download functionality will be available soon.",
-    });
+  const handleDownloadReport = async (auditId: string) => {
+    try {
+      const auditData = await getFullAuditData(auditId);
+      if (!auditData) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch audit data. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedAudit(auditData);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download report. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -269,6 +292,47 @@ const ManagerDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Hidden PDF Download Link */}
+      {selectedAudit && (
+        <div style={{ display: 'none' }}>
+          <PDFDownloadLink
+            document={<AuditReport data={selectedAudit} downloadOnly />}
+            fileName={generateFileName(selectedAudit.audit.clientName)}
+          >
+            {({ blob, url, loading, error }) => {
+              if (loading) {
+                toast({
+                  title: "Generating PDF",
+                  description: "Please wait while we generate your report...",
+                  variant: "default",
+                });
+              }
+              if (error) {
+                toast({
+                  title: "Error",
+                  description: "Failed to generate PDF. Please try again.",
+                  variant: "destructive",
+                });
+              }
+              if (url) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = generateFileName(selectedAudit.audit.clientName);
+                link.click();
+                URL.revokeObjectURL(url);
+                setSelectedAudit(null);
+                toast({
+                  title: "Success",
+                  description: "Report downloaded successfully!",
+                  variant: "default",
+                });
+              }
+              return null;
+            }}
+          </PDFDownloadLink>
+        </div>
+      )}
     </div>
   );
 };

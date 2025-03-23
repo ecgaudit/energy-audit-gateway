@@ -26,9 +26,13 @@ export type AirConditioningEquipment = RoomBase & {
   capacityBTU: number;
   capacityWatt: number;
   eer: number; // Energy Efficiency Ratio
+  coolingCapacity: number; // in kW
   roomLength: number;
   roomWidth: number;
   roomHeight: number;
+  durationPerDay: number;
+  daysPerWeek: number;
+  remarks?: string;
 }
 
 // Lighting Equipment

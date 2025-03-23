@@ -252,22 +252,74 @@ const generateRecommendations = (data: AuditData, metrics: ReturnType<typeof cal
     return total + (area > 0 ? power / area : 0);
   }, 0) / data.lighting.length;
 
-  if (lightingPowerDensity > 10) { // If power density is high
+  if (lightingPowerDensity > 10) {
     recommendations.push("Consider upgrading to LED lighting to reduce power density and energy consumption.");
   }
 
   // Air Conditioning recommendations
-  const acEfficiency = data.airConditioning.reduce((total, item) => total + (item.eer || 0), 0) / data.airConditioning.length;
-  if (acEfficiency < 3) {
-    recommendations.push("Consider upgrading air conditioning units to more energy-efficient models with higher EER ratings.");
+  if (data.airConditioning.length > 0) {
+    const acEfficiency = data.airConditioning.reduce((total, item) => {
+      // Calculate EER if not provided
+      const eer = item.eer || (item.coolingCapacity && item.inputPower ? 
+        (item.coolingCapacity * 1000) / item.inputPower : 0);
+      return total + eer;
+    }, 0) / data.airConditioning.length;
+
+    if (acEfficiency < 3) {
+      recommendations.push("Consider upgrading air conditioning units to more energy-efficient models with higher EER ratings (recommended EER > 3).");
+    }
+
+    // Additional AC recommendations based on usage patterns
+    const acUsage = data.airConditioning.reduce((total, item) => {
+      return total + (item.durationPerDay || 0);
+    }, 0) / data.airConditioning.length;
+
+    if (acUsage > 12) {
+      recommendations.push("High daily AC usage detected. Consider implementing temperature setbacks during non-occupancy hours.");
+    }
+
+    // Check for oversized AC units
+    const oversizedUnits = data.airConditioning.filter(item => {
+      const area = (item.roomLength || 0) * (item.roomWidth || 0);
+      const coolingCapacity = item.coolingCapacity || 0;
+      return area > 0 && coolingCapacity / area > 0.15; // More than 150W per square meter
+    });
+
+    if (oversizedUnits.length > 0) {
+      recommendations.push("Some AC units appear to be oversized for their rooms. Consider right-sizing to improve efficiency.");
+    }
+  }
+
+  // Other Equipment recommendations
+  if (data.otherEquipment.length > 0) {
+    const otherEquipmentPower = data.otherEquipment.reduce((total, item) => {
+      return total + ((item.power || 0) * (item.quantity || 1));
+    }, 0);
+
+    if (otherEquipmentPower > 5000) {
+      recommendations.push("Review and optimize the usage of high-power equipment. Consider implementing power management systems.");
+    }
+
+    // Additional recommendations based on equipment types
+    if (data.otherEquipment.some(item => item.equipmentType.toLowerCase().includes('computer'))) {
+      recommendations.push("Consider implementing computer power management policies to reduce standby power consumption.");
+    }
+
+    if (data.otherEquipment.some(item => item.equipmentType.toLowerCase().includes('printer'))) {
+      recommendations.push("Optimize printer usage and consider implementing print management solutions to reduce energy consumption.");
+    }
+
+    if (data.otherEquipment.some(item => item.equipmentType.toLowerCase().includes('refrigerator'))) {
+      recommendations.push("Ensure proper maintenance of refrigeration equipment and consider upgrading to energy-efficient models.");
+    }
   }
 
   // General recommendations based on metrics
-  if (metrics.energyPerArea > 0.2) { // kWh per square meter
+  if (metrics.energyPerArea > 0.2) {
     recommendations.push("Implement energy management systems to optimize energy usage per area.");
   }
 
-  if (metrics.energyPerPerson > 0.5) { // kWh per person
+  if (metrics.energyPerPerson > 0.5) {
     recommendations.push("Consider implementing occupancy-based controls to reduce energy waste in low-occupancy periods.");
   }
 
@@ -379,6 +431,29 @@ const AuditReport = ({ data }: AuditReportProps) => {
               {data.lighting.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
                   <Text style={styles.tableCell}>{item.roomName}</Text>
+                  <Text style={styles.tableCell}>{item.power * item.quantity}</Text>
+                  <Text style={styles.tableCell}>{item.quantity}</Text>
+                  <Text style={styles.tableCell}>{item.durationPerDay}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Other Equipment */}
+            <View style={[styles.table, { marginTop: 20 }]}>
+              <Text style={[styles.summaryLabel, { marginBottom: 10 }]}>Other Equipment</Text>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderCell}>Room</Text>
+                <Text style={styles.tableHeaderCell}>Equipment</Text>
+                <Text style={styles.tableHeaderCell}>Type</Text>
+                <Text style={styles.tableHeaderCell}>Power (W)</Text>
+                <Text style={styles.tableHeaderCell}>Quantity</Text>
+                <Text style={styles.tableHeaderCell}>Hours/Day</Text>
+              </View>
+              {data.otherEquipment.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={styles.tableCell}>{item.roomName}</Text>
+                  <Text style={styles.tableCell}>{item.equipmentName}</Text>
+                  <Text style={styles.tableCell}>{item.equipmentType}</Text>
                   <Text style={styles.tableCell}>{item.power * item.quantity}</Text>
                   <Text style={styles.tableCell}>{item.quantity}</Text>
                   <Text style={styles.tableCell}>{item.durationPerDay}</Text>

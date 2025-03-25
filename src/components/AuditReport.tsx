@@ -115,33 +115,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Times-Bold',
   },
   table: {
-    width: '100%',
-    marginVertical: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 4,
+    overflow: 'hidden',
+    fontSize: 8,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    borderBottom: '1 solid #000000',
-    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 4,
   },
   tableHeaderCell: {
-    flex: 1,
-    color: '#000000',
-    fontSize: 11,
-    fontFamily: 'Times-Bold',
-    textTransform: 'uppercase',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    fontWeight: 'bold',
+    fontSize: 8,
+    color: '#374151',
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#cccccc',
-    borderBottomStyle: 'solid',
-    padding: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 3,
   },
   tableCell: {
-    flex: 1,
-    fontSize: 10,
-    color: '#333333',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    fontSize: 8,
+    color: '#4B5563',
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
   },
   recommendations: {
     marginTop: 20,
@@ -180,12 +189,60 @@ const styles = StyleSheet.create({
     right: 50,
     fontSize: 9,
     color: '#666666',
-  }
+  },
+  subsection: {
+    marginBottom: 20,
+  },
+  subsectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
 });
 
 interface AuditReportProps {
   data: AuditData;
   downloadOnly?: boolean;
+}
+
+interface AirConditioningEquipment {
+  roomName: string;
+  quantity: number;
+  inputPower: number;
+  durationPerDay: number;
+  daysPerWeek: number;
+  roomLength?: number;
+  roomWidth?: number;
+  occupancy?: number;
+  remarks?: string;
+  coolingCapacity?: number;
+  eer?: number;
+}
+
+interface LightingEquipment {
+  roomName: string;
+  quantity: number;
+  power: number;
+  durationPerDay: number;
+  daysPerWeek: number;
+  roomLength?: number;
+  roomWidth?: number;
+  occupancy?: number;
+  remarks?: string;
+}
+
+interface OtherEquipment {
+  equipmentName: string;
+  quantity: number;
+  power: number;
+  durationPerDay: number;
+  daysPerWeek: number;
+  roomLength?: number;
+  roomWidth?: number;
+  occupancy?: number;
+  remarks?: string;
+  equipmentType: string;
 }
 
 // Calculate total energy consumption for each equipment type
@@ -416,6 +473,30 @@ const generateRecommendations = (data: AuditData, metrics: ReturnType<typeof cal
   return recommendations;
 };
 
+const calculateItemEnergy = (item: AirConditioningEquipment | LightingEquipment | OtherEquipment) => {
+  const dailyHours = item.durationPerDay || 0;
+  const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
+  const power = 'inputPower' in item ? item.inputPower : item.power;
+  const totalPower = power * (item.quantity || 1);
+  const area = (item.roomLength || 0) * (item.roomWidth || 0);
+  const occupancy = item.occupancy || 0;
+  
+  // Calculate base energy consumption
+  let energy = dailyHours * monthlyDays * totalPower;
+  
+  // Adjust for room size (larger rooms may need more energy)
+  if (area > 0) {
+    energy *= (1 + (area / 100)); // 1% increase per 100m²
+  }
+  
+  // Adjust for occupancy (more people = more heat load)
+  if (occupancy > 0) {
+    energy *= (1 + (occupancy * 0.05)); // 5% increase per person
+  }
+  
+  return energy / 1000; // Convert to kWh
+};
+
 const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
   const energyConsumption = calculateTotalEnergy(data);
   const metrics = calculateEfficiencyMetrics(data);
@@ -427,36 +508,36 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
   };
 
   const ReportContent = () => (
-    <Document>
-      <Page size="A4" style={styles.page}>
+      <Document>
+        <Page size="A4" style={styles.page}>
         {/* Header with Logo */}
-        <View style={styles.header}>
+          <View style={styles.header}>
           <View style={styles.headerContent}>
             <Image
               src="/ecg-logo.png"
               style={styles.headerLogo}
             />
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>Energy Audit Report</Text>
-              <Text style={styles.headerSubtitle}>Comprehensive Energy Analysis and Recommendations</Text>
+            <Text style={styles.headerTitle}>Energy Audit Report</Text>
+            <Text style={styles.headerSubtitle}>Comprehensive Energy Analysis and Recommendations</Text>
             </View>
           </View>
-        </View>
+          </View>
 
-        {/* Client Information */}
-        <View style={styles.clientInfo}>
+          {/* Client Information */}
+          <View style={styles.clientInfo}>
           <View style={styles.clientInfoRow}>
             <Text style={styles.clientInfoLabel}>Client:</Text>
             <Text style={styles.clientInfoValue}>{data.audit.clientName}</Text>
-          </View>
+            </View>
           <View style={styles.clientInfoRow}>
             <Text style={styles.clientInfoLabel}>Location:</Text>
             <Text style={styles.clientInfoValue}>{data.audit.locationFloor}</Text>
-          </View>
+            </View>
           <View style={styles.clientInfoRow}>
             <Text style={styles.clientInfoLabel}>Branch:</Text>
             <Text style={styles.clientInfoValue}>{data.audit.envelopeBranch}</Text>
-          </View>
+            </View>
           <View style={styles.clientInfoRow}>
             <Text style={styles.clientInfoLabel}>Auditor:</Text>
             <Text style={styles.clientInfoValue}>{data.audit.auditorName}</Text>
@@ -464,120 +545,152 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
           <View style={styles.clientInfoRow}>
             <Text style={styles.clientInfoLabel}>Date:</Text>
             <Text style={styles.clientInfoValue}>{new Date().toLocaleDateString()}</Text>
-          </View>
-        </View>
-
-        {/* Energy Consumption Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Energy Consumption Summary</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Air Conditioning</Text>
-              <Text style={styles.summaryValue}>{energyConsumption.acEnergy.toFixed(2)} kWh/month</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Lighting</Text>
-              <Text style={styles.summaryValue}>{energyConsumption.lightingEnergy.toFixed(2)} kWh/month</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Other Equipment</Text>
-              <Text style={styles.summaryValue}>{energyConsumption.otherEnergy.toFixed(2)} kWh/month</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Total Energy Consumption</Text>
-              <Text style={styles.summaryValue}>{energyConsumption.totalEnergy.toFixed(2)} kWh/month</Text>
             </View>
           </View>
-        </View>
 
-        {/* Equipment Inventory */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Equipment Inventory</Text>
-          
-          {/* Air Conditioning */}
-          <View style={styles.table}>
-            <Text style={[styles.summaryLabel, { marginBottom: 10 }]}>Air Conditioning Units</Text>
-            <View style={styles.tableHeader}>
-              <Text style={styles.tableHeaderCell}>Room</Text>
-              <Text style={styles.tableHeaderCell}>Power (W)</Text>
-              <Text style={styles.tableHeaderCell}>Hours/Day</Text>
-              <Text style={styles.tableHeaderCell}>EER</Text>
-            </View>
-            {data.airConditioning.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.tableCell}>{item.roomName}</Text>
-                <Text style={styles.tableCell}>{item.inputPower}</Text>
-                <Text style={styles.tableCell}>{item.durationPerDay}</Text>
-                <Text style={styles.tableCell}>{item.eer}</Text>
+          {/* Energy Consumption Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Energy Consumption Summary</Text>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Air Conditioning</Text>
+                <Text style={styles.summaryValue}>{energyConsumption.acEnergy.toFixed(2)} kWh/month</Text>
               </View>
-            ))}
-          </View>
-
-          {/* Lighting */}
-          <View style={[styles.table, { marginTop: 20 }]}>
-            <Text style={[styles.summaryLabel, { marginBottom: 10 }]}>Lighting Equipment</Text>
-            <View style={styles.tableHeader}>
-              <Text style={styles.tableHeaderCell}>Room</Text>
-              <Text style={styles.tableHeaderCell}>Power (W)</Text>
-              <Text style={styles.tableHeaderCell}>Quantity</Text>
-              <Text style={styles.tableHeaderCell}>Hours/Day</Text>
-            </View>
-            {data.lighting.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.tableCell}>{item.roomName}</Text>
-                <Text style={styles.tableCell}>{item.power * item.quantity}</Text>
-                <Text style={styles.tableCell}>{item.quantity}</Text>
-                <Text style={styles.tableCell}>{item.durationPerDay}</Text>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Lighting</Text>
+                <Text style={styles.summaryValue}>{energyConsumption.lightingEnergy.toFixed(2)} kWh/month</Text>
               </View>
-            ))}
-          </View>
-
-          {/* Other Equipment */}
-          <View style={[styles.table, { marginTop: 20 }]}>
-            <Text style={[styles.summaryLabel, { marginBottom: 10 }]}>Other Equipment</Text>
-            <View style={styles.tableHeader}>
-              <Text style={styles.tableHeaderCell}>Room</Text>
-              <Text style={styles.tableHeaderCell}>Equipment</Text>
-              <Text style={styles.tableHeaderCell}>Type</Text>
-              <Text style={styles.tableHeaderCell}>Power (W)</Text>
-              <Text style={styles.tableHeaderCell}>Quantity</Text>
-              <Text style={styles.tableHeaderCell}>Hours/Day</Text>
-            </View>
-            {data.otherEquipment.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.tableCell}>{item.roomName}</Text>
-                <Text style={styles.tableCell}>{item.equipmentName}</Text>
-                <Text style={styles.tableCell}>{item.equipmentType}</Text>
-                <Text style={styles.tableCell}>{item.power * item.quantity}</Text>
-                <Text style={styles.tableCell}>{item.quantity}</Text>
-                <Text style={styles.tableCell}>{item.durationPerDay}</Text>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Other Equipment</Text>
+                <Text style={styles.summaryValue}>{energyConsumption.otherEnergy.toFixed(2)} kWh/month</Text>
               </View>
-            ))}
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Total Energy Consumption</Text>
+                <Text style={styles.summaryValue}>{energyConsumption.totalEnergy.toFixed(2)} kWh/month</Text>
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* Recommendations */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Energy Efficiency Recommendations</Text>
-          <View style={styles.recommendations}>
-            {recommendations.map((recommendation, index) => (
-              <View key={index} style={styles.recommendationItem}>
+          {/* Equipment Inventory */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>EQUIPMENT INVENTORY</Text>
+            
+            {/* Air Conditioning Equipment */}
+            {data.airConditioning.length > 0 && (
+              <View style={styles.subsection}>
+                <Text style={styles.subsectionTitle}>Air Conditioning Equipment</Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Room Name</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>Qty</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>BTU</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>EER</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensions</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
+                  </View>
+                  {data.airConditioning.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.roomName}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.inputPower}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.8 }]}>{item.coolingCapacity || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.eer || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomLength && item.roomWidth ? `${item.roomLength}m × ${item.roomWidth}m` : '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
+                      <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Lighting Equipment */}
+            {data.lighting.length > 0 && (
+              <View style={styles.subsection}>
+                <Text style={styles.subsectionTitle}>Lighting Equipment</Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Room Name</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>Qty</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensions</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
+                  </View>
+                  {data.lighting.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.roomName}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.power}</Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomLength && item.roomWidth ? `${item.roomLength}m × ${item.roomWidth}m` : '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
+                      <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Other Equipment */}
+            {data.otherEquipment.length > 0 && (
+              <View style={styles.subsection}>
+                <Text style={styles.subsectionTitle}>Other Equipment</Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Room Name</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Equipment Name</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Type</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>Qty</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
+                  </View>
+                  {data.otherEquipment.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomName}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.equipmentName}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.8 }]}>{item.equipmentType}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.power}</Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
+                      <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Recommendations */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Energy Efficiency Recommendations</Text>
+            <View style={styles.recommendations}>
+              {recommendations.map((recommendation, index) => (
+                <View key={index} style={styles.recommendationItem}>
                 <Text style={styles.recommendationNumber}>Recommendation {index + 1}</Text>
-                <Text style={styles.recommendationText}>{recommendation}</Text>
-              </View>
-            ))}
+                  <Text style={styles.recommendationText}>{recommendation}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Footer */}
-        <Text style={styles.footer}>
+          {/* Footer */}
+          <Text style={styles.footer}>
           This report was generated by ECG Energy Audit System • {new Date().toLocaleDateString()}
-        </Text>
+          </Text>
         <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (
           `Page ${pageNumber} of ${totalPages}`
         )} fixed />
-      </Page>
-    </Document>
+        </Page>
+      </Document>
   );
 
   if (downloadOnly) {
@@ -620,7 +733,7 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
       </div>
       <PDFViewer width="100%" height={600}>
         <ReportContent />
-      </PDFViewer>
+    </PDFViewer>
     </div>
   );
 };

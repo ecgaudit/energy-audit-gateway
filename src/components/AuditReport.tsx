@@ -218,6 +218,8 @@ interface AirConditioningEquipment {
   remarks?: string;
   coolingCapacity?: number;
   eer?: number;
+  acType: string;
+  otherAcType?: string;
 }
 
 interface LightingEquipment {
@@ -580,31 +582,33 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
               <View style={styles.subsection}>
                 <Text style={styles.subsectionTitle}>Air Conditioning Equipment</Text>
                 <View style={styles.table}>
-                  <View style={styles.tableHeader}>
+              <View style={styles.tableHeader}>
                     <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Room Name</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>Qty</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>BTU</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>EER</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>AC Type</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensions</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
-                  </View>
-                  {data.airConditioning.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
+              </View>
+              {data.airConditioning.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.roomName}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.inputPower}</Text>
                       <Text style={[styles.tableCell, { flex: 0.8 }]}>{item.coolingCapacity || '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.eer || '-'}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.8 }]}>{item.acType === 'Other' ? item.otherAcType : item.acType}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomLength && item.roomWidth ? `${item.roomLength}m × ${item.roomWidth}m` : '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
                       <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
-                    </View>
-                  ))}
                 </View>
+              ))}
+            </View>
               </View>
             )}
 
@@ -621,9 +625,9 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensions</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
-                  </View>
-                  {data.lighting.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
+              </View>
+              {data.lighting.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.roomName}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
@@ -631,9 +635,9 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomLength && item.roomWidth ? `${item.roomLength}m × ${item.roomWidth}m` : '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
                       <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
-                    </View>
-                  ))}
                 </View>
+              ))}
+            </View>
               </View>
             )}
 
@@ -642,7 +646,7 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
               <View style={styles.subsection}>
                 <Text style={styles.subsectionTitle}>Other Equipment</Text>
                 <View style={styles.table}>
-                  <View style={styles.tableHeader}>
+              <View style={styles.tableHeader}>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Room Name</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Equipment Name</Text>
@@ -651,9 +655,9 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
-                  </View>
-                  {data.otherEquipment.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
+              </View>
+              {data.otherEquipment.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomName}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.equipmentName}</Text>
@@ -662,9 +666,9 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.power}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
                       <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
-                    </View>
-                  ))}
                 </View>
+              ))}
+            </View>
               </View>
             )}
           </View>

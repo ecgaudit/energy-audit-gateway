@@ -33,21 +33,27 @@ export type AirConditioningEquipment = RoomBase & {
   durationPerDay: number;
   daysPerWeek: number;
   remarks?: string;
+  acType: string; // Type of air conditioning (Central, Standing, Split, Other)
+  otherAcType?: string; // Custom type when acType is "Other"
 }
 
 // Form state type for Air Conditioning Equipment
-export type AirConditioningFormState = Omit<AirConditioningEquipment, 'id' | 'auditId'> & {
-  quantity: string | number;
-  inputPower: string | number;
-  capacityBTU: string | number;
-  capacityWatt: string | number;
-  eer: string | number;
-  roomLength: string | number;
-  roomWidth: string | number;
-  roomHeight: string | number;
-  durationPerDay: string | number;
-  daysPerWeek: string | number;
-  occupancy: string | number;
+export type AirConditioningFormState = {
+  roomName: string;
+  occupancy: string;
+  durationPerDay: string;
+  daysPerWeek: string;
+  remarks: string;
+  quantity: string;
+  inputPower: string;
+  capacityBTU: string;
+  capacityWatt: string;
+  eer: string;
+  roomLength: string;
+  roomWidth: string;
+  roomHeight: string;
+  acType: string;
+  otherAcType?: string;
 }
 
 // Lighting Equipment

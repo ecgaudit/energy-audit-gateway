@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AirConditioningEquipment, AirConditioningFormState } from "@/types";
 import { addAirConditioningEquipment, updateAirConditioningEquipment } from "@/services/firebaseService";
 
@@ -31,6 +32,8 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
     roomLength: '',
     roomWidth: '',
     roomHeight: '',
+    acType: 'Central',
+    otherAcType: '',
   });
 
   const { toast } = useToast();
@@ -51,6 +54,8 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
         roomLength: editingData.roomLength.toString(),
         roomWidth: editingData.roomWidth.toString(),
         roomHeight: editingData.roomHeight.toString(),
+        acType: editingData.acType,
+        otherAcType: editingData.otherAcType,
       });
     }
   }, [editingData]);
@@ -128,6 +133,38 @@ const AirConditioningForm = ({ auditId, onCancel, onSuccess, editingData }: AirC
                 required
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="acType">AC Type</Label>
+              <Select
+                value={formData.acType}
+                onValueChange={(value) => setFormData({ ...formData, acType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select AC Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Central">Central</SelectItem>
+                  <SelectItem value="Standing">Standing</SelectItem>
+                  <SelectItem value="Split">Split</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.acType === 'Other' && (
+              <div className="space-y-2">
+                <Label htmlFor="otherAcType">Specify AC Type</Label>
+                <Input
+                  id="otherAcType"
+                  name="otherAcType"
+                  value={formData.otherAcType}
+                  onChange={(e) => setFormData({ ...formData, otherAcType: e.target.value })}
+                  placeholder="Enter AC type"
+                  required
+                />
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="occupancy">Occupancy (people)</Label>

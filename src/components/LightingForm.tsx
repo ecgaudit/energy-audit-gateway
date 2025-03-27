@@ -28,6 +28,9 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
     roomLength: '',
     roomWidth: '',
     roomHeight: '',
+    lampsPerFitting: '',
+    lampDescription: '',
+    averageLux: '',
   });
 
   const { toast } = useToast();
@@ -45,6 +48,9 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
         roomLength: editingData.roomLength.toString(),
         roomWidth: editingData.roomWidth.toString(),
         roomHeight: editingData.roomHeight.toString(),
+        lampsPerFitting: editingData.lampsPerFitting.toString(),
+        lampDescription: editingData.lampDescription,
+        averageLux: editingData.averageLux.toString(),
       });
     }
   }, [editingData]);
@@ -66,6 +72,9 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
         roomLength: Number(formData.roomLength),
         roomWidth: Number(formData.roomWidth),
         roomHeight: Number(formData.roomHeight),
+        lampsPerFitting: Number(formData.lampsPerFitting),
+        lampDescription: formData.lampDescription,
+        averageLux: Number(formData.averageLux),
         auditId,
       };
       
@@ -226,6 +235,44 @@ const LightingForm = ({ auditId, onCancel, onSuccess, editingData }: LightingFor
                 value={formData.daysPerWeek}
                 onChange={(e) => setFormData({ ...formData, daysPerWeek: e.target.value })}
                 placeholder="e.g. 5"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lampsPerFitting">No. of Lamps per Fitting</Label>
+              <Input
+                id="lampsPerFitting"
+                name="lampsPerFitting"
+                type="number"
+                value={formData.lampsPerFitting}
+                onChange={(e) => setFormData({ ...formData, lampsPerFitting: e.target.value })}
+                placeholder="e.g. 4"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lampDescription">Description of Lamp</Label>
+              <Input
+                id="lampDescription"
+                name="lampDescription"
+                value={formData.lampDescription}
+                onChange={(e) => setFormData({ ...formData, lampDescription: e.target.value })}
+                placeholder="e.g. LED 18W 6500K"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="averageLux">Average Lux</Label>
+              <Input
+                id="averageLux"
+                name="averageLux"
+                type="number"
+                value={formData.averageLux}
+                onChange={(e) => setFormData({ ...formData, averageLux: e.target.value })}
+                placeholder="e.g. 500"
                 required
               />
             </div>

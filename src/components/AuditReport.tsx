@@ -232,6 +232,9 @@ interface LightingEquipment {
   roomWidth?: number;
   occupancy?: number;
   remarks?: string;
+  lampsPerFitting?: number;
+  lampDescription?: string;
+  averageLux?: number;
 }
 
 interface OtherEquipment {
@@ -247,56 +250,48 @@ interface OtherEquipment {
   equipmentType: string;
 }
 
+// Add these constants at the top of the file after the imports
+const RECOMMENDED_LUX_LEVELS = {
+  'Office': 500,
+  'Meeting Room': 500,
+  'Reception': 300,
+  'Corridor': 200,
+  'Storage': 200,
+  'Kitchen': 300,
+  'Bathroom': 200,
+  'Default': 300
+};
+
+const LIGHTING_EFFICIENCY_FACTORS = {
+  'LED': 1.0,
+  'CFL': 0.7,
+  'Halogen': 0.5,
+  'Incandescent': 0.3,
+  'Default': 0.7
+};
+
 // Calculate total energy consumption for each equipment type
 const calculateTotalEnergy = (data: AuditData) => {
   // Air Conditioning calculation
   const acEnergy = data.airConditioning.reduce((total, item) => {
-    const dailyHours = item.durationPerDay || 0;
-    const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
-    const power = (item.inputPower || 0) * (item.quantity || 1); // Multiply by quantity
-    const area = (item.roomLength || 0) * (item.roomWidth || 0);
-    const occupancy = item.occupancy || 0;
-    
-    // Calculate base energy consumption
-    let energy = dailyHours * monthlyDays * power;
-    
-    // Adjust for room size (larger rooms may need more energy)
-    if (area > 0) {
-      energy *= (1 + (area / 100)); // 1% increase per 100m²
-    }
-    
-    // Adjust for occupancy (more people = more heat load)
-    if (occupancy > 0) {
-      energy *= (1 + (occupancy * 0.05)); // 5% increase per person
-    }
-    
-    return total + energy;
+    return total + calculateItemEnergy(item);
   }, 0);
 
   // Lighting calculation
   const lightingEnergy = data.lighting.reduce((total, item) => {
-    const dailyHours = item.durationPerDay || 0;
-    const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
-    const power = (item.power || 0) * (item.quantity || 1);
-    const area = (item.roomLength || 0) * (item.roomWidth || 0);
-    const powerDensity = area > 0 ? power / area : 0;
-    
-    return total + (dailyHours * monthlyDays * power);
+    return total + calculateItemEnergy(item);
   }, 0);
 
   // Other Equipment calculation
   const otherEnergy = data.otherEquipment.reduce((total, item) => {
-    const dailyHours = item.durationPerDay || 0;
-    const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
-    const power = (item.power || 0) * (item.quantity || 1);
-    return total + (dailyHours * monthlyDays * power);
+    return total + calculateItemEnergy(item);
   }, 0);
 
   return {
-    acEnergy: acEnergy / 1000, // Convert to kWh
-    lightingEnergy: lightingEnergy / 1000,
-    otherEnergy: otherEnergy / 1000,
-    totalEnergy: (acEnergy + lightingEnergy + otherEnergy) / 1000,
+    acEnergy,
+    lightingEnergy,
+    otherEnergy,
+    totalEnergy: acEnergy + lightingEnergy + otherEnergy,
   };
 };
 
@@ -412,6 +407,73 @@ const analyzeRemarks = (remarks: string, equipmentType: string, roomName: string
   return recommendations;
 };
 
+// Add this new function for lighting efficiency calculation
+const calculateLightingEfficiency = (item: LightingEquipment) => {
+  const area = (item.roomLength || 0) * (item.roomWidth || 0);
+  const currentLux = item.averageLux || 0;
+  const roomType = item.roomName.split(' ')[0] || 'Default';
+  const recommendedLux = RECOMMENDED_LUX_LEVELS[roomType as keyof typeof RECOMMENDED_LUX_LEVELS] || RECOMMENDED_LUX_LEVELS.Default;
+  
+  // Calculate theoretical lux based on power and area
+  const totalPower = item.power * item.quantity;
+  const theoreticalLux = area > 0 ? (totalPower * 100) / area : 0; // Assuming 100 lumens per watt as baseline
+  
+  // Determine lamp type from description
+  const lampType = item.lampDescription?.toLowerCase().includes('led') ? 'LED' :
+                   item.lampDescription?.toLowerCase().includes('cfl') ? 'CFL' :
+                   item.lampDescription?.toLowerCase().includes('halogen') ? 'Halogen' :
+                   item.lampDescription?.toLowerCase().includes('incandescent') ? 'Incandescent' : 'Default';
+  
+  const efficiencyFactor = LIGHTING_EFFICIENCY_FACTORS[lampType as keyof typeof LIGHTING_EFFICIENCY_FACTORS] || LIGHTING_EFFICIENCY_FACTORS.Default;
+  
+  // Calculate efficiency score (0 to 1)
+  const luxEfficiency = currentLux > 0 ? Math.min(currentLux / recommendedLux, 1) : 0;
+  const powerEfficiency = theoreticalLux > 0 ? Math.min(recommendedLux / theoreticalLux, 1) : 0;
+  
+  return {
+    efficiencyScore: (luxEfficiency + powerEfficiency) / 2,
+    isEfficient: luxEfficiency >= 0.8 && powerEfficiency >= 0.8,
+    recommendedLux,
+    currentLux,
+    theoreticalLux,
+    lampType,
+    efficiencyFactor
+  };
+};
+
+// Update the calculateItemEnergy function
+const calculateItemEnergy = (item: AirConditioningEquipment | LightingEquipment | OtherEquipment) => {
+  const dailyHours = item.durationPerDay || 0;
+  const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
+  const power = 'inputPower' in item ? item.inputPower : item.power;
+  const totalPower = power * (item.quantity || 1);
+  const area = (item.roomLength || 0) * (item.roomWidth || 0);
+  const occupancy = item.occupancy || 0;
+  
+  // Calculate base energy consumption
+  let energy = dailyHours * monthlyDays * totalPower;
+  
+  // Special handling for lighting equipment
+  if ('lampDescription' in item) {
+    const lightingEfficiency = calculateLightingEfficiency(item as LightingEquipment);
+    // Adjust energy based on efficiency
+    energy *= (1 + (1 - lightingEfficiency.efficiencyScore)); // Increase energy consumption for inefficient lighting
+  } else {
+    // Adjust for room size (larger rooms may need more energy)
+    if (area > 0) {
+      energy *= (1 + (area / 100)); // 1% increase per 100m²
+    }
+    
+    // Adjust for occupancy (more people = more heat load)
+    if (occupancy > 0) {
+      energy *= (1 + (occupancy * 0.05)); // 5% increase per person
+    }
+  }
+  
+  return energy / 1000; // Convert to kWh
+};
+
+// Update the generateRecommendations function to include lighting efficiency recommendations
 const generateRecommendations = (data: AuditData, metrics: ReturnType<typeof calculateEfficiencyMetrics>) => {
   const recommendations: string[] = [];
 
@@ -456,47 +518,24 @@ const generateRecommendations = (data: AuditData, metrics: ReturnType<typeof cal
 
   // Lighting recommendations
   if (data.lighting.length > 0) {
-    const lightingPower = data.lighting.reduce((total, item) => {
-      return total + ((item.power || 0) * (item.quantity || 1));
-    }, 0);
-
-    if (lightingPower > 2000) {
-      recommendations.push("Consider upgrading to LED lighting to reduce energy consumption.");
-    }
-
-    // Analyze remarks for each lighting fixture
     data.lighting.forEach(item => {
-      if (item.remarks && item.remarks.trim()) {
-        recommendations.push(...analyzeRemarks(item.remarks, 'lighting', item.roomName));
+      const efficiency = calculateLightingEfficiency(item);
+      
+      if (!efficiency.isEfficient) {
+        if (efficiency.currentLux < efficiency.recommendedLux) {
+          recommendations.push(`Insufficient lighting in ${item.roomName}. Current lux (${efficiency.currentLux}) is below recommended level (${efficiency.recommendedLux}). Consider upgrading fixtures or increasing quantity.`);
+        } else if (efficiency.currentLux > efficiency.recommendedLux * 1.2) {
+          recommendations.push(`Excessive lighting in ${item.roomName}. Current lux (${efficiency.currentLux}) is above recommended level (${efficiency.recommendedLux}). Consider reducing fixtures or implementing dimming controls.`);
+        }
+        
+        if (efficiency.lampType !== 'LED') {
+          recommendations.push(`Consider upgrading lighting in ${item.roomName} to LED fixtures. Current ${efficiency.lampType} lamps are less efficient (efficiency factor: ${efficiency.efficiencyFactor}).`);
+        }
       }
     });
   }
 
   return recommendations;
-};
-
-const calculateItemEnergy = (item: AirConditioningEquipment | LightingEquipment | OtherEquipment) => {
-  const dailyHours = item.durationPerDay || 0;
-  const monthlyDays = (item.daysPerWeek || 0) * 4; // Approximate monthly days
-  const power = 'inputPower' in item ? item.inputPower : item.power;
-  const totalPower = power * (item.quantity || 1);
-  const area = (item.roomLength || 0) * (item.roomWidth || 0);
-  const occupancy = item.occupancy || 0;
-  
-  // Calculate base energy consumption
-  let energy = dailyHours * monthlyDays * totalPower;
-  
-  // Adjust for room size (larger rooms may need more energy)
-  if (area > 0) {
-    energy *= (1 + (area / 100)); // 1% increase per 100m²
-  }
-  
-  // Adjust for occupancy (more people = more heat load)
-  if (occupancy > 0) {
-    energy *= (1 + (occupancy * 0.05)); // 5% increase per person
-  }
-  
-  return energy / 1000; // Convert to kWh
 };
 
 const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
@@ -622,22 +661,28 @@ const AuditReport = ({ data, downloadOnly = false }: AuditReportProps) => {
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Occ.</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>Qty</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Power</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Lamps/Fit</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Lamp Description</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 0.6 }]}>Lux</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensions</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Usage</Text>
                     <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>kWh</Text>
-              </View>
-              {data.lighting.map((item, index) => (
-                <View key={index} style={styles.tableRow}>
+                  </View>
+                  {data.lighting.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.roomName}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.occupancy || '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 0.5 }]}>{item.quantity}</Text>
                       <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.power}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.lampsPerFitting}</Text>
+                      <Text style={[styles.tableCell, { flex: 1.2 }]}>{item.lampDescription}</Text>
+                      <Text style={[styles.tableCell, { flex: 0.6 }]}>{item.averageLux}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.roomLength && item.roomWidth ? `${item.roomLength}m × ${item.roomWidth}m` : '-'}</Text>
                       <Text style={[styles.tableCell, { flex: 1 }]}>{item.durationPerDay} hrs/day, {item.daysPerWeek} days/wk</Text>
                       <Text style={[styles.tableCell, { flex: 0.7 }]}>{calculateItemEnergy(item).toFixed(2)}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
               </View>
             )}
 

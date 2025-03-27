@@ -63,18 +63,26 @@ export type LightingEquipment = RoomBase & {
   roomLength: number;
   roomWidth: number;
   roomHeight: number;
+  lampsPerFitting: number;
+  lampDescription: string;
+  averageLux: number;
 }
 
 // Form state type for Lighting Equipment
-export type LightingFormState = Omit<LightingEquipment, 'id' | 'auditId'> & {
-  quantity: string | number;
-  power: string | number;
-  roomLength: string | number;
-  roomWidth: string | number;
-  roomHeight: string | number;
-  occupancy: string | number;
-  durationPerDay: string | number;
-  daysPerWeek: string | number;
+export type LightingFormState = {
+  roomName: string;
+  occupancy: string;
+  durationPerDay: string;
+  daysPerWeek: string;
+  remarks: string;
+  quantity: string;
+  power: string;
+  roomLength: string;
+  roomWidth: string;
+  roomHeight: string;
+  lampsPerFitting: string;
+  lampDescription: string;
+  averageLux: string;
 }
 
 // Other Equipment
